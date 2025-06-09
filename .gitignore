@@ -1,0 +1,59 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Optional npm cache directory
+.npm
+
+# Build output
+/dist
+/build
+/out
+
+# Environment files
+.env
+.env.*.local
+
+# Coverage directory
+coverage/
+
+# IDE settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Misc
+*.tgz
+yarn-error.log
+
+# Next.js
+.next/
+out/
+
+# Parcel-bundler cache (jika pakai Parcel)
+.cache/
+
+# Storybook
+.storybook-out/
+
+# Typescript cache
+*.tsbuildinfo
+
+# Optional: Jika pakai Mac
+.AppleDouble
+.LSOverride
+
+# Optional: Repl.it
+.repl_history
+
+# Jest
+jest-html-reporters-*
