@@ -1,6 +1,6 @@
 {
   "ignore": [
-    "auth_info_baileys_*/*",
+    "auth_info/*",
     "inbox_*.json",
     "autoreply.json"
   ]
