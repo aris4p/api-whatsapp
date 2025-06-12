@@ -1,6 +1,8 @@
 const service = require('../services/whatsappService');
 const sessionRepo = require('../repositories/whatsappSessionRepo');
+const inboxRepo = require('../repositories/inboxRepo');
 const formatNumber = require('../utils/formatNumber');
+const autoReply = require('../utils/autoReply');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
@@ -182,6 +184,240 @@ exports.sendMedia = async (req, res) => {
         return res.status(500).json({
             status: false,
             message: 'Failed to send media.',
+            detail: error.message
+        });
+    }
+}
+
+exports.getGroups = async (req, res) => {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+        return res.status(400).json({
+            status: false,
+            message: 'sessionId is required!'
+        });
+    }
+
+    const session = sessionRepo.get(sessionId);
+
+    if (!session || !session.sock?.user) {
+        return res.status(400).json({
+            status: false,
+            message: 'Session does not exist or is not connected!'
+        });
+    }
+
+    try {
+        const groupsData = await session.sock.groupFetchAllParticipating();
+
+        // Optional: convert from object to array if needed
+        const groups = Object.values(groupsData);
+
+        return res.json({ status: true, groups });
+    } catch (error) {
+        console.error('Error fetching groups:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to fetch groups.',
+            detail: error.message
+        });
+    }
+};
+
+
+exports.sendGroupMessage = async (req, res) => {
+    const { sessionId, groupId, message } = req.body;
+
+    if (!sessionId || !groupId || !message) {
+        return res.status(400).json({
+            status: false,
+            message: 'sessionId, groupId & message are required!'
+        });
+    }
+
+    const session = sessionRepo.get(sessionId);
+    if (!session || !session.sock?.user) {
+        return res.status(400).json({
+            status: false,
+            message: 'Session does not exist or is not connected!'
+        });
+    }
+
+    try {
+        await session.sock.sendMessage(groupId, { text: message });
+        return res.json({
+            status: true,
+            message: 'Group message sent!'
+        });
+    } catch (error) {
+        console.error('Send group message error:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to send message to group.',
+            detail: error.message
+        });
+    }
+}
+
+exports.getInbox = async (req, res) => {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+        return res.status(400).json({ status: false, message: 'sessionId is required!' });
+    }
+
+    const session = sessionRepo.get(sessionId);
+    if (!session) {
+        return res.status(400).json({ status: false, message: 'Session does not exist!' });
+    }
+
+    try {
+        const inbox = inboxRepo.getInbox(sessionId);
+        return res.json({ status: true, inbox });
+    } catch (error) {
+        console.error('Get inbox error:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to get inbox.',
+            detail: error.message
+        });
+    }
+}
+
+exports.getAutoReplyRules = async (req, res) => {
+     try {
+        const rules = autoReply.getAutoReplyRules();
+        return res.json({ status: true, rules });
+    } catch (error) {
+        console.error('Error loading auto-reply rules:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to load auto-reply rules.',
+            detail: error.message
+        });
+    }
+}
+
+exports.setAutoReplyRules = async (req, res) => {
+    const { rules } = req.body;
+
+    if (!Array.isArray(rules)) {
+        return res.status(400).json({
+            status: false,
+            message: 'rules should be an array!'
+        });
+    }
+
+    try {
+        autoReply.saveAutoReplyRules(rules);
+        return res.json({
+            status: true,
+            message: 'Auto-reply rules updated.',
+            rules
+        });
+    } catch (error) {
+        console.error('Failed to save auto-reply rules:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to save auto-reply rules.',
+            detail: error.message
+        });
+    }
+}
+
+exports.getProfileInfo = async (req, res) => {
+    const { sessionId, number } = req.params;
+
+    if (!sessionId || !number) {
+        return res.status(400).json({
+            status: false,
+            message: 'sessionId and number are required!'
+        });
+    }
+
+    const session = sessionRepo.get(sessionId);
+    if (!session || !session.sock?.user) {
+        return res.status(400).json({
+            status: false,
+            message: 'Session does not exist or is not connected!'
+        });
+    }
+
+    let jid;
+    try {
+        jid = formatNumber(number);
+    } catch (error) {
+        return res.status(400).json({
+            status: false,
+            message: error.message
+        });
+    }
+
+    try {
+        const ppUrl = await session.sock.profilePictureUrl(jid, 'image').catch(() => null);
+        const info = await session.sock.onWhatsApp(jid);
+        const exists = info?.[0]?.exists ?? false;
+
+        return res.json({
+            status: true,
+            profile: {
+                jid,
+                exists,
+                ppUrl,
+                info: info?.[0] || null
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching profile info:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to get profile info.',
+            detail: error.message
+        });
+    }
+}
+
+exports.checkNumber = async (req, res) => {
+     const { sessionId, number } = req.params;
+
+    if (!sessionId || !number) {
+        return res.status(400).json({
+            status: false,
+            message: 'sessionId and number are required!'
+        });
+    }
+
+    const session = sessionRepo.get(sessionId);
+    if (!session || !session.sock?.user) {
+        return res.status(400).json({
+            status: false,
+            message: 'Session does not exist or is not connected!'
+        });
+    }
+
+    let jid;
+    try {
+        jid = formatNumber(number);
+    } catch (err) {
+        return res.status(400).json({
+            status: false,
+            message: err.message
+        });
+    }
+
+    try {
+        const result = await session.sock.onWhatsApp(jid);
+        return res.json({
+            status: true,
+            exists: result?.[0]?.exists || false,
+            data: result[0] || null
+        });
+    } catch (error) {
+        console.error('Error checking number:', error);
+        return res.status(500).json({
+            status: false,
+            message: 'Failed to check number.',
             detail: error.message
         });
     }

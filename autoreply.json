@@ -1,6 +1,10 @@
 [
   {
-    "keyword": "hashkdvsagdvsaudastudcasutcadstusaftuai",
-    "reply": "Hai juga, ada yang bisa dibantu?"
+    "keyword": "test",
+    "reply": "is this test!!!"
+  },
+  {
+    "keyword": "hello",
+    "reply": "Hi there 👋"
   }
 ]
