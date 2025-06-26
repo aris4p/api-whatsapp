@@ -8,11 +8,37 @@ const fs = require('fs');
 const path = require('path');
 
 exports.startSession = async (req, res) => {
-    const { sessionId } = req.body;
-    if (!sessionId) return res.status(400).json({ status: false, message: 'sessionId is required!' });
-    if (sessionRepo.exists(sessionId)) return res.status(400).json({ status: false, message: 'Session already exists!' });
+  const { sessionId } = req.body;
+  if (!sessionId) {
+    return res.status(400).json({
+      status: false,
+      message: 'sessionId is required!'
+    });
+  }
+
+  // Jika session sudah ada, kembalikan 200 tapi status false
+  if (sessionRepo.exists(sessionId)) {
+    return res.status(200).json({
+      status: false,
+      message: 'Session already exists!'
+    });
+  }
+
+  try {
     await service.startSock(sessionId);
-    res.json({ status: true, message: `Session ${sessionId} started!` });
+    return res.status(200).json({
+      status: true,
+      message: `Session ${sessionId} started!`
+    });
+  } catch (err) {
+    console.error('Error starting session:', err);
+    // Network / service error
+    return res.status(400).json({
+      status: false,
+      message: 'Failed to start session due to network/service error',
+      error: err.message
+    });
+  }
 };
 
 exports.sendMessage = async (req, res) => {
