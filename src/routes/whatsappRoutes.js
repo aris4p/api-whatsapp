@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const ctrl = require('../controllers/whatsappController');
+const cors = require('cors');
 
 console.log(ctrl);
 
@@ -8,6 +9,11 @@ console.log(ctrl);
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
+app.use(cors({
+  origin: '*', // atau '*' untuk semua origin
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
 // ───────── Session Management ─────────
 router.post('/start-session', ctrl.startSession);
 router.post('/reset-session', ctrl.resetSession);
