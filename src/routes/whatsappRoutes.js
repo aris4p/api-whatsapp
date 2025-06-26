@@ -9,9 +9,10 @@ console.log(ctrl);
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
-app.use(cors({
-  origin: '*', // atau '*' untuk semua origin
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+// apply CORS to this router only
+router.use(cors({
+  origin: '*',     // atau '*' untuk dev
+  methods: ['GET','POST','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
 // ───────── Session Management ─────────
