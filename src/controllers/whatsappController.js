@@ -248,7 +248,7 @@ exports.sendGroupMessage = async (req, res) => {
         const mentionJids = mentions.map(num => `${num.replace(/\D/g, '')}@s.whatsapp.net`);
         const groupMetadata = await session.sock.groupMetadata(groupId);
 
-        // Ambil nama dari metadata
+        // Ambil nama dari metadata grup
         const mentionNames = mentionJids.map(jid => {
             const participant = groupMetadata.participants.find(p => p.id === jid);
             return `@${participant?.name || participant?.notify || jid.split('@')[0]}`;
