@@ -6,5 +6,9 @@
   {
     "keyword": "hello",
     "reply": "Hi there 👋"
+  },
+  {
+    "keyword": "athar",
+    "reply": "Hi athar jancok 👋"
   }
 ]

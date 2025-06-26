@@ -227,12 +227,12 @@ exports.getGroups = async (req, res) => {
 
 
 exports.sendGroupMessage = async (req, res) => {
-    const { sessionId, groupId, message } = req.body;
+    const { sessionId, groupId, mentions, template } = req.body;
 
-    if (!sessionId || !groupId || !message) {
+    if (!sessionId || !groupId || !template || !Array.isArray(mentions)) {
         return res.status(400).json({
             status: false,
-            message: 'sessionId, groupId & message are required!'
+            message: 'sessionId, groupId, template & mentions[] are required!'
         });
     }
 
@@ -245,11 +245,32 @@ exports.sendGroupMessage = async (req, res) => {
     }
 
     try {
-        await session.sock.sendMessage(groupId, { text: message });
+        const mentionJids = mentions.map(num => `${num.replace(/\D/g, '')}@s.whatsapp.net`);
+        const groupMetadata = await session.sock.groupMetadata(groupId);
+
+        // Ambil nama dari metadata
+        const mentionNames = mentionJids.map(jid => {
+            const participant = groupMetadata.participants.find(p => p.id === jid);
+            return `@${participant?.name || participant?.notify || jid.split('@')[0]}`;
+        });
+
+        // Ganti placeholder {0}, {1}, {2} dengan nama yang ditemukan
+        let finalMessageText = template;
+        mentionNames.forEach((name, index) => {
+            const placeholder = new RegExp(`\\{${index}\\}`, 'g');
+            finalMessageText = finalMessageText.replace(placeholder, name);
+        });
+
+        await session.sock.sendMessage(groupId, {
+            text: finalMessageText,
+            mentions: mentionJids
+        });
+
         return res.json({
             status: true,
-            message: 'Group message sent!'
+            message: 'Group message sent with template!'
         });
+
     } catch (error) {
         console.error('Send group message error:', error);
         return res.status(500).json({
@@ -258,7 +279,10 @@ exports.sendGroupMessage = async (req, res) => {
             detail: error.message
         });
     }
-}
+};
+
+
+
 
 exports.getInbox = async (req, res) => {
     const { sessionId } = req.params;
